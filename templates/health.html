@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - RAG Chatbot Diagnostics{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: #0f172a;">System Health & Diagnostics</h2>
+        <p class="text-muted mb-0">Live status monitoring for FAISS Vector Store, Embeddings, Database, and LLM Orchestration.</p>
+    </div>
+    <button class="btn btn-primary btn-sm fw-semibold px-3" onclick="loadHealthData()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Run Health Check
+    </button>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- FAISS Vector Store -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-database-fill text-primary me-2"></i>FAISS Vector Store</h5>
+                <span class="badge bg-success" id="hFaissBadge">Ready</span>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Indexing Engine</span>
+                        <span class="fw-bold font-monospace" id="hFaissEngine">FAISS CPU</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Total Vectors</span>
+                        <span class="fw-bold text-primary" id="hFaissVectors">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Embedding Dimension</span>
+                        <span class="fw-bold font-monospace" id="hFaissDim">384</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Persistence Path</span>
+                        <small class="text-muted font-monospace" style="font-size: 0.75rem;">instance/faiss_index</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embedding Model -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-cpu-fill text-info me-2"></i>Embedding Model</h5>
+                <span class="badge bg-success" id="hEmbedBadge">Active</span>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Model Name</span>
+                        <span class="fw-bold font-monospace text-dark" id="hEmbedModel">all-MiniLM-L6-v2</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Target Architecture</span>
+                        <span class="fw-bold">Sentence Transformers</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Normalization</span>
+                        <span class="badge bg-light text-dark border">L2 Normalized</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Chunk Settings</span>
+                        <small class="text-muted fw-semibold">1000 characters &bull; 200 overlap</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local LLM / Ollama -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-robot text-purple me-2"></i>Language Model (LLM)</h5>
+                <span class="badge bg-primary" id="hLlmBadge">Connected</span>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Provider</span>
+                        <span class="fw-bold" id="hLlmProvider">Ollama (Local)</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Model ID</span>
+                        <span class="fw-bold font-monospace" id="hLlmModel">llama3.1:8b</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Endpoint</span>
+                        <small class="text-muted font-monospace" id="hLlmEndpoint">http://localhost:11434</small>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Anti-Hallucination Policy</span>
+                        <span class="badge bg-success">Enforced Strict</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQLite Database -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-server text-warning me-2"></i>Relational Database</h5>
+                <span class="badge bg-success" id="hDbBadge">Healthy</span>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Engine</span>
+                        <span class="fw-bold font-monospace">SQLite 3 / SQLAlchemy</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Document Records</span>
+                        <span class="fw-bold" id="hDbDocs">0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Tables</span>
+                        <small class="text-muted fw-semibold">documents, conversations, messages</small>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <span class="text-muted">Storage Path</span>
+                        <small class="text-muted font-monospace" style="font-size: 0.75rem;">instance/rag_chatbot.db</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        loadHealthData();
+    });
+
+    function loadHealthData() {
+        fetch('/api/health')
+            .then(res => res.json())
+            .then(h => {
+                // Vector Store
+                document.getElementById('hFaissBadge').textContent = h.vector_store.status;
+                document.getElementById('hFaissEngine').textContent = h.vector_store.engine;
+                document.getElementById('hFaissVectors').textContent = h.vector_store.total_vectors;
+                document.getElementById('hFaissDim').textContent = h.vector_store.dimension;
+
+                // Embeddings
+                document.getElementById('hEmbedBadge').textContent = h.embedding_model.status;
+                document.getElementById('hEmbedModel').textContent = h.embedding_model.name;
+
+                // LLM
+                document.getElementById('hLlmBadge').textContent = h.llm.status;
+                document.getElementById('hLlmProvider').textContent = h.llm.provider;
+                document.getElementById('hLlmModel').textContent = h.llm.model;
+                document.getElementById('hLlmEndpoint').textContent = h.llm.endpoint;
+
+                // Database
+                document.getElementById('hDbBadge').textContent = h.database.status;
+                document.getElementById('hDbDocs').textContent = h.database.document_count;
+            });
+    }
+</script>
+{% endblock %}
