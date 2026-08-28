@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}RAG Chatbot - PDF Question Answering{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Conversations Sidebar -->
+    <div class="chat-sidebar">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
+            <span class="fw-bold text-dark fs-6"><i class="bi bi-chat-left-dots text-primary me-2"></i>Chats</span>
+            <button class="btn btn-primary btn-sm px-2 py-1" onclick="startNewConversation()" title="New Chat Session">
+                <i class="bi bi-plus-lg"></i> New
+            </button>
+        </div>
+        <div class="chat-history-list" id="conversationsList">
+            <!-- Injected via JS -->
+        </div>
+    </div>
+
+    <!-- Main Chat Window -->
+    <div class="chat-main">
+        <!-- Top Chat Header -->
+        <div class="p-3 border-bottom bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark" id="currentChatTitle">Document Question Answering</h5>
+                <small class="text-muted" id="currentChatSubtitle">Retrieval-Augmented Generation &bull; Verified Citations</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Document Filter Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light border btn-sm dropdown-toggle fw-semibold" type="button" id="docFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-filter me-1 text-primary"></i> <span id="selectedDocLabel">All Documents</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" id="docFilterMenu" style="max-height: 250px; overflow-y: auto;">
+                        <li><a class="dropdown-item active" href="javascript:void(0)" onclick="selectDocFilter(null, 'All Documents')">All Uploaded Documents</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <!-- Dynamic doc items -->
+                    </ul>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" onclick="clearCurrentChat()" title="Clear Messages in Session">
+                    <i class="bi bi-trash3 me-1"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages injected dynamically via JS -->
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="px-4 py-2 bg-light border-top d-flex flex-wrap gap-2 align-items-center" id="promptChipsContainer">
+            <span class="text-muted small fw-bold"><i class="bi bi-stars text-warning me-1"></i>Try asking:</span>
+            <button type="button" class="prompt-chip" onclick="sendQuickPrompt('What is supervised learning?')">
+                What is supervised learning?
+            </button>
+            <button type="button" class="prompt-chip" onclick="sendQuickPrompt('What are the advantages mentioned in the PDF?')">
+                What are the advantages in the PDF?
+            </button>
+            <button type="button" class="prompt-chip" onclick="sendQuickPrompt('What algorithms are discussed?')">
+                What algorithms are discussed?
+            </button>
+            <button type="button" class="prompt-chip" onclick="sendQuickPrompt('Summarize the methodology and conclusion.')">
+                Summarize methodology & conclusion
+            </button>
+            <button type="button" class="prompt-chip" onclick="sendQuickPrompt('What are the limitations?')">
+                What are the limitations?
+            </button>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="p-3 border-top bg-white">
+            <form id="chatForm" class="d-flex gap-2" onsubmit="handleChatSubmit(event)">
+                <input type="text" class="form-control py-2 px-3 shadow-none border" id="chatInput" placeholder="Ask any question regarding the uploaded PDF documents..." autocomplete="off" required>
+                <button type="submit" class="btn btn-primary px-4 fw-bold d-flex align-items-center gap-2" id="sendBtn">
+                    <span>Send</span>
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+    const INITIAL_CONV_ID = {{ active_conversation_id or 'null' }};
+    document.addEventListener("DOMContentLoaded", function() {
+        initChat(INITIAL_CONV_ID);
+    });
+</script>
+{% endblock %}
