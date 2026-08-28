@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RAG Chatbot System{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-extrabold mb-1" style="font-weight: 800; color: #0f172a;">PDF Intelligence & RAG Dashboard</h2>
+        <p class="text-muted mb-0">Retrieve semantic answers and citations from enterprise and academic PDF documents.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('views.documents') }}" class="btn btn-primary fw-semibold px-3 shadow-sm">
+            <i class="bi bi-cloud-arrow-up me-1"></i> Upload PDFs
+        </a>
+        <a href="{{ url_for('views.chat') }}" class="btn btn-outline-primary fw-semibold px-3">
+            <i class="bi bi-chat-dots me-1"></i> Start Q&A Chat
+        </a>
+    </div>
+</div>
+
+<!-- 5 Stat Counters -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card stat-card stat-indigo h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                </div>
+                <span class="badge bg-light text-primary border">PDFs</span>
+            </div>
+            <div class="stat-value" id="statTotalDocs">0</div>
+            <div class="stat-label mt-1">Total Documents</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card stat-card stat-cyan h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon">
+                    <i class="bi bi-book-half"></i>
+                </div>
+                <span class="badge bg-light text-info border">Pages</span>
+            </div>
+            <div class="stat-value" id="statTotalPages">0</div>
+            <div class="stat-label mt-1">Total Pages</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card stat-card stat-purple h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon">
+                    <i class="bi bi-puzzle-fill"></i>
+                </div>
+                <span class="badge bg-light text-purple border">Chunks</span>
+            </div>
+            <div class="stat-value" id="statTotalChunks">0</div>
+            <div class="stat-label mt-1">Indexed Chunks</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card stat-card stat-emerald h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon">
+                    <i class="bi bi-chat-quote-fill"></i>
+                </div>
+                <span class="badge bg-light text-success border">Q&A</span>
+            </div>
+            <div class="stat-value" id="statTotalQuestions">0</div>
+            <div class="stat-label mt-1">Questions Answered</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card stat-card stat-amber h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon">
+                    <i class="bi bi-chat-left-text-fill"></i>
+                </div>
+                <span class="badge bg-light text-warning border">Sessions</span>
+            </div>
+            <div class="stat-value" id="statTotalConversations">0</div>
+            <div class="stat-label mt-1">Conversations</div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: Upload & RAG Architecture -->
+<div class="row g-4 mb-4">
+    <!-- Quick Upload Box -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Quick PDF Ingestion</h5>
+                <a href="{{ url_for('views.documents') }}" class="btn btn-sm btn-link text-decoration-none">Manage All <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <div class="dropzone-box" id="dashboardDropzone">
+                    <i class="bi bi-file-earmark-arrow-up-fill drop-icon"></i>
+                    <h5 class="fw-bold mb-1">Drag & Drop PDF Documents Here</h5>
+                    <p class="text-muted small mb-3">Supports multi-file upload &bull; Auto-chunking &bull; FAISS indexing</p>
+                    <input type="file" id="dashboardFileInput" multiple accept=".pdf" class="d-none">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-4 fw-semibold" onclick="document.getElementById('dashboardFileInput').click()">
+                        <i class="bi bi-folder me-1"></i> Browse Computer
+                    </button>
+                    <div id="dashboardUploadProgress" class="mt-3 d-none">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        <span class="text-muted small">Extracting pages, generating embeddings & vectorizing...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Diagnostics & RAG Pipeline Status -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-diagram-3-fill text-primary me-2"></i>RAG Engine Diagnostics</h5>
+                <a href="{{ url_for('views.health') }}" class="btn btn-sm btn-link text-decoration-none">Full Diagnostics <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <div>
+                            <strong><i class="bi bi-database text-primary me-2"></i>FAISS Vector Store</strong>
+                            <small class="text-muted d-block">L2 Distance Similarity & Index Persistence</small>
+                        </div>
+                        <span class="badge bg-success" id="diagFaiss">Active</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <div>
+                            <strong><i class="bi bi-cpu text-info me-2"></i>Embedding Model</strong>
+                            <small class="text-muted d-block">Sentence Transformers (all-MiniLM-L6-v2, 384-dim)</small>
+                        </div>
+                        <span class="badge bg-success">Ready</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <div>
+                            <strong><i class="bi bi-robot text-purple me-2"></i>Local LLM</strong>
+                            <small class="text-muted d-block">Ollama (llama3.1:8b) with Anti-Hallucination Prompt</small>
+                        </div>
+                        <span class="badge bg-primary" id="diagLlm">Demo RAG Active</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        <div>
+                            <strong><i class="bi bi-server text-warning me-2"></i>Relational Database</strong>
+                            <small class="text-muted d-block">SQLite / SQLAlchemy Message & Doc Store</small>
+                        </div>
+                        <span class="badge bg-success">Healthy</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Recent Documents & Recent Queries -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-files text-primary me-2"></i>Indexed Documents</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th class="ps-4">Filename</th>
+                                <th>Pages</th>
+                                <th>Chunks</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentDocsTableBody">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Recent Q&A Inquiries</h5>
+            </div>
+            <div class="card-body p-4 pt-1">
+                <div id="recentQuestionsList" class="d-flex flex-column gap-2">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        loadDashboardStats();
+        setupDashboardUpload();
+    });
+
+    function loadDashboardStats() {
+        fetch('/api/dashboard/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('statTotalDocs').textContent = data.total_documents;
+                document.getElementById('statTotalPages').textContent = data.total_pages;
+                document.getElementById('statTotalChunks').textContent = data.total_chunks;
+                document.getElementById('statTotalQuestions').textContent = data.total_questions;
+                document.getElementById('statTotalConversations').textContent = data.total_conversations;
+
+                // Recent docs table
+                const tbody = document.getElementById('recentDocsTableBody');
+                tbody.innerHTML = '';
+                if (!data.recent_documents || data.recent_documents.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No documents uploaded yet.</td></tr>';
+                } else {
+                    data.recent_documents.forEach(d => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="ps-4 fw-bold">
+                                <i class="bi bi-file-pdf text-danger me-2"></i>${d.filename}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">${d.pages} pgs</span></td>
+                            <td><span class="badge bg-light text-primary border">${d.chunk_count} chunks</span></td>
+                            <td class="pe-4 text-end">
+                                <a href="/chat" class="btn btn-sm btn-outline-primary"><i class="bi bi-chat-quote me-1"></i>Ask</a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                // Recent questions list
+                const qlist = document.getElementById('recentQuestionsList');
+                qlist.innerHTML = '';
+                if (!data.recent_questions || data.recent_questions.length === 0) {
+                    qlist.innerHTML = '<p class="text-muted small py-3">No questions asked yet. Start a chat session!</p>';
+                } else {
+                    data.recent_questions.forEach(q => {
+                        const item = document.createElement('div');
+                        item.className = 'p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center';
+                        item.innerHTML = `
+                            <div>
+                                <div class="fw-semibold text-dark mb-1"><i class="bi bi-question-circle text-primary me-2"></i>${q.content}</div>
+                                <small class="text-muted">${q.created_at || ''}</small>
+                            </div>
+                            <a href="/chat/${q.conversation_id}" class="btn btn-sm btn-light border"><i class="bi bi-arrow-right"></i></a>
+                        `;
+                        qlist.appendChild(item);
+                    });
+                }
+            });
+    }
+
+    function setupDashboardUpload() {
+        const dropzone = document.getElementById('dashboardDropzone');
+        const fileInput = document.getElementById('dashboardFileInput');
+        const progress = document.getElementById('dashboardUploadProgress');
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleUpload(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleUpload(fileInput.files);
+            }
+        });
+
+        function handleUpload(files) {
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            progress.classList.remove('d-none');
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                progress.classList.add('d-none');
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    loadDashboardStats();
+                }
+            })
+            .catch(err => {
+                progress.classList.add('d-none');
+                alert("Upload failed: " + err);
+            });
+        }
+    }
+</script>
+{% endblock %}
